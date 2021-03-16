@@ -1,0 +1,180 @@
+\section{Приведение уравнения поверхности второго рода к каноническому виду}
+
+\begin{sagesilent}
+    # Точность вычислений (знаков после запятой)
+    acc = 10
+
+    # Границы для трёхмерного графика
+    plot_range = 10.0
+
+    u(x, y, z) = 11 * x ^ 2 - 2 * x * y - 2 * x * z + 2 * y * z + 9 * z ^ 2 - 4 * x + y + z
+\end{sagesilent}
+
+Исходное уравнение поверхности второго рода:
+
+$\sage{u(x, y, z)} = 0$
+
+\begin{sagesilent}
+    # Из уравнения поверхности получим коэффициенты
+    a11 = 11
+    a22 = 0
+    a33 = 9
+
+    a12 = -2 / 2
+    a13 = -2 / 2
+    a23 = 2 / 2
+
+    a0 = 0
+    a1 = -4 / 2
+    a2 = 1 / 2
+    a3 = 1 / 2
+
+    matrA = matrix([
+    [a11, a12, a13],
+    [a12, a22, a23],
+    [a13, a23, a33]
+    ])
+
+    vecA = vector([a1, a2, a3])
+\end{sagesilent}
+
+Матричный вид уравнения:
+
+$\sage{LatexExpr("A = " + latex(matrA))}$
+
+И вектор линейных коэффициентов:
+
+$\sage{LatexExpr("a = " + latex(vecA))}$
+
+\begin{sagesilent}
+    # Характеристический многочлен
+    var("z")
+    matrAm = matrA - z * identity_matrix(3)
+    detA = det(matrAm).simplify_full()
+\end{sagesilent}
+
+Составим характеристический многочлен:
+
+$\sage{LatexExpr(r'\det(A - z * E) = ' + latex(detA))}$
+
+\begin{sagesilent}
+    # Собственные числа
+    solutions = solve(detA == 0, z)
+    eigenvalues = []
+    for i in range(len(solutions)):
+        if (solutions[i].rhs().imag().n(digits = acc) < 10 ** -acc):
+            eigenvalues.append(solutions[i].rhs().real().n(digits = acc))
+\end{sagesilent}
+
+Корни характеристического уравнения:
+
+$\sage{LatexExpr("z_0 = " + str(eigenvalues[0]) + r', z_1 = ' + str(eigenvalues[1]) + r', z_2 = ' + str(eigenvalues[2]))}$
+
+\begin{sagesilent}
+    # Собственные вектора
+    eigenvectors = []
+    var("x1 x2 x3")
+    for i in range(len(eigenvalues)):
+        matrAmzE = matrA - eigenvalues[i] * identity_matrix(3)
+        system_of_equations = []
+        for j in range(3):
+            system_of_equations.append(matrAmzE[j][0] * x1 + matrAmzE[j][1] * x2 + matrAmzE[j][2] * x3 == 0)
+        # Решаем систему уравнений методом Гаусса
+        system_of_equations[1] = system_of_equations[1] - system_of_equations[0] * matrAmzE[1][0] / matrAmzE[0][0]
+        system_of_equations[2] = system_of_equations[2] - system_of_equations[0] * matrAmzE[2][0] / matrAmzE[0][0]
+        system_of_equations[2] = system_of_equations[2] - system_of_equations[1] * (system_of_equations[2].lhs() / system_of_equations[1].lhs())
+        # Проверяем, что ранг матрицы меньше трёх
+        if (system_of_equations[2].lhs() == 0 and system_of_equations[2].rhs() == 0):
+            system_of_equations[2] = (x3 == 1)
+        else:
+            print("Ранг матрицы равен трём")
+        eigenvec = vector([j.rhs().n(digits = acc) for j in solve(system_of_equations, x1, x2, x3)[0]])
+        ans = matrAmzE * eigenvec
+        eigenvectors.append(eigenvec.n(digits = acc))
+\end{sagesilent}
+
+Получим собственные векторы:
+
+$\sage{LatexExpr(r'\lambda_0 = ' + str(eigenvalues[0].n(digits = acc)) + ', s_0 = ' + str(eigenvectors[0].n(digits = acc)))}$
+
+$\sage{LatexExpr(r'\lambda_1 = ' + str(eigenvalues[1].n(digits = acc)) + ', s_1 = ' + str(eigenvectors[1].n(digits = acc)))}$
+
+$\sage{LatexExpr(r'\lambda_2 = ' + str(eigenvalues[2].n(digits = acc)) + ', s_2 = ' + str(eigenvectors[2].n(digits = acc)))}$
+
+\begin{sagesilent}
+    # Получим матрицу перехода
+    matrS = matrix(eigenvectors)
+\end{sagesilent}
+
+Получим матрицу перехода к диагональной матрице
+
+$\sage{LatexExpr("S = " + latex(matrS.n(digits = acc)))}$
+
+\begin{sagesilent}
+    # Нормируем собсветнные векторы
+    for i in range(len(eigenvectors)):
+        eigenvectors[i] = eigenvectors[i] / sqrt(eigenvectors[i].dot_product(eigenvectors[i]))
+    matrS = matrix(eigenvectors)
+\end{sagesilent}
+
+После нормировки собственных векторов матрица перехода имеет вид:
+
+$\sage{LatexExpr("S^* = " + latex(matrS.n(digits = acc)))}$
+
+\begin{sagesilent}
+    matrAdiag = matrS * matrA * matrS.T
+\end{sagesilent}
+
+Приводя к диагональному виду:
+
+$\sage{LatexExpr("S^{*} * A * {S^{*}}^T = " + latex(matrAdiag.n(digits = acc)))}$
+
+\begin{sagesilent}
+    vecAnew = matrS.T * vecA
+\end{sagesilent}
+
+Новый вектор линейных коэффициентов:
+
+$\sage{vecAnew}$
+
+\begin{sagesilent}
+    v(x, y, z) = 0
+    variables = [x, y, z]
+    for i in range(len(variables)):
+        v += matrAdiag[i][i] * variables[i] ^ 2 + variables[i] * vecAnew[i]
+\end{sagesilent}
+
+После приведения к каноническому виду получим:
+
+$\sage{v(x, y, z) == 0}$
+
+\begin{sagesilent}
+    # Сделаем замену переменных
+    coef_linear = []
+    for i in range(len(vecAnew)):
+        coef_linear.append((vecAnew[i] / (2 * matrAdiag[i][i])) ** 2)
+        if (matrAdiag[i][i] * vecAnew[i] < 0):
+            coef_linear[-1] = -coef_linear[-1]
+    v(x, y, z) = a0
+    variables = [x, y, z]
+    for i in range(len(variables)):
+        v += matrAdiag[i][i] * (variables[i] + coef_linear[i]) ^ 2 - matrAdiag[i][i] * abs(coef_linear[i])
+\end{sagesilent}
+
+Сделаем замену переменных, получим:
+
+$\sage{v(x, y, z) == 0}$
+
+\pagebreak
+
+Сравним графики исходного уравнения поверхности второго рода и канонического уравнения после замены переменных.
+
+График функции $\sage{u(x, y, z)} = 0$
+\begin{center}
+  \sageplot[trim=50 50 50 50, clip, width=10cm][png]{implicit_plot3d(u, (-plot_range, plot_range), (-plot_range, plot_range), (-plot_range, plot_range), color="orange")}
+\end{center}
+
+График функции $\sage{v(x, y, z)} = 0$
+\begin{center}
+  \sageplot[trim=50 50 50 50, clip, width=10cm][png]{implicit_plot3d(v, (-plot_range, plot_range), (-plot_range, plot_range), (-plot_range, plot_range), color="orange")}
+\end{center}
